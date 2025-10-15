@@ -2,10 +2,19 @@ const romanMap = {
   I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000
 };
 
+/**
+ * Vérifie si une chaîne romaine est syntaxiquement correcte.
+ * Gère :
+ *  - les caractères interdits
+ *  - les parenthèses
+ *  - les répétitions excessives
+ *  - les soustractions illégales (ex: IC, IIV, XM, etc.)
+ */
 function validateRomanString(roman) {
-  if (!roman) return null;
+  if (!roman) return "Chaîne vide.";
   if (/[^IVXLCDM()\s]/i.test(roman)) return "Caractères invalides détectés.";
 
+  // Vérifie que les parenthèses sont bien ouvertes/fermées
   let depth = 0;
   for (let ch of roman) {
     if (ch === "(") depth++;
@@ -17,30 +26,27 @@ function validateRomanString(roman) {
   if (depth !== 0) return "Parenthèses non fermées.";
 
   roman = roman.toUpperCase().replace(/\s+/g, "");
+  
+  // Vérifie les répétitions autorisées
+  if (/(IIII|XXXX|CCCC|MMMM)/.test(roman)) return "Trop de répétitions.";
+  if (/(VV|LL|DD)/.test(roman)) return "Trop de répétitions.";
 
-  if (/(IIII|XXXX|CCCC|MMMM)/.test(roman)) 
-    return "Trop de répétitions.";
-  if (/(VV|LL|DD)/.test(roman)) 
-    return "Trop de répétitions.";
+  // Détecte les soustractions interdites
+  const illegalSub = /I[CLDM]|I{2,}[VXLCDM]|X[DM]|X{2,}[LCDM]|C[^DMIXVLC]|C{2,}[DM]/g;
+ 
+  if (illegalSub.test(roman)) return "Soustraction invalide.";
+  // Interdit la répétition de la même soustraction
+  if (/(IV|IX|XL|XC|CD|CM).*\1/.test(roman)) return "Soustraction incohérente.";
 
-  const validSubtractions = ["IV","IX","XL","XC","CD","CM"];
-  const pattern = /I[VXLCDM]|X[LCDM]|C[DM]/g;
-  const matches = roman.match(pattern) || [];
-  for (const pair of matches) {
-    if (!validSubtractions.includes(pair)) {
-      return "Soustraction invalide";
-    }
-  }
-
-  if (/(IV|IX|XL|XC|CD|CM).*\1/.test(roman))
-    return "Soustraction incohérente";
-
-  if (/(IV|IX|XL|XC|CD|CM)[IVXLCDM]/.test(roman) && !/(IX$|IV$|XC$|XL$|CM$|CD$)/.test(roman))
-    return "Structure incohérente";
+  // Interdit trop de petits symboles avant un plus grand
+  if (/(I{2,}[VXLCDM]|X{2,}[LCDM]|C{2,}[DM])/.test(roman)) return "Séquence de soustraction invalide";
 
   return null;
 }
 
+/**
+ * Calcule la valeur d'un "bloc" romain simple
+ */
 function parseRomanChunk(roman) {
   let total = 0;
   for (let i = 0; i < roman.length; i++) {
@@ -52,6 +58,9 @@ function parseRomanChunk(roman) {
   return total;
 }
 
+/**
+ * Convertit une chaîne romaine en chiffre arabe, en vérifiant la validité.
+ */
 function romanToArabic(roman) {
   if (!roman) return "";
   roman = roman.toUpperCase().replace(/\s+/g, "");
@@ -61,6 +70,8 @@ function romanToArabic(roman) {
 
   const blocks = [];
   let i = 0;
+
+  // Découpage en blocs : symboles simples ou blocs entre parenthèses
   while (i < roman.length) {
     if (roman[i] === "(") {
       let depth = 1;
@@ -106,6 +117,9 @@ function romanToArabic(roman) {
   return total;
 }
 
+/**
+ * Convertit un nombre arabe en chiffre romain
+ */
 function arabicToRoman(num) {
   num = parseInt(num, 10);
   if (isNaN(num) || num <= 0) return "";
